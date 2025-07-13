@@ -1,0 +1,29 @@
+@Logic
+script Item extends Logic
+
+	property table itemList = {}
+
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		self:LoadItemList()
+	end
+
+	method void LoadItemList()
+		local rows = _DataService:GetTable("FishTable"):GetAllRow() or {}
+		self.itemList = {}
+		for i, row in ipairs(rows) do
+			local item = ItemType()
+			item.name = row["Name"] or ""
+			item.iconRUID = row["SpriteRUID"] or ""
+			item.description = row["Description"] or ""
+			item.price = tonumber(row["Price"]) or 0
+			if item.name ~= "" then
+				self.itemList[item.name] = item
+			end
+		end
+	end
+
+	method ItemType GetItemInfo(string itemName)
+		return self.itemList[itemName]
+	end
+end

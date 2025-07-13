@@ -1,0 +1,22 @@
+{
+  "Id": "",
+  "GameId": "",
+  "EntryKey": "userdataset://9a18788d-1f8e-461d-a333-90f02ec5b915",
+  "ContentType": "x-mod/userdataset",
+  "Content": "",
+  "Usage": 0,
+  "UsePublish": 1,
+  "UseService": 1,
+  "CoreVersion": "1.24.0.0",
+  "StudioVersion": "0.1.0.0",
+  "DynamicLoading": 0,
+  "ContentProto": {
+    "Use": "Json",
+    "Json": {
+      "name": "FishTable",
+      "id": "9a18788d-1f8e-461d-a333-90f02ec5b915",
+      "serveronly": true,
+      "dynamicloading": 0
+    }
+  }
+}

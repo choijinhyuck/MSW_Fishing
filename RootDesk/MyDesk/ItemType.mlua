@@ -1,0 +1,16 @@
+@Struct
+script ItemType
+
+	property string name = ""
+
+	property string iconRUID = ""
+
+	property number price = 0
+
+	property string description = ""
+
+	method void Function1()
+		
+	end
+
+end

@@ -1,0 +1,90 @@
+@Component
+script NewInventoryComponent extends Component
+	
+	@TargetUserSync
+	property SyncTable<string> item_list
+	
+	@TargetUserSync
+	property integer Meso = 0
+	
+	@TargetUserSync
+	property integer max_inventory_slot = 5
+	
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		self:ItemInit()
+	end
+	
+	@ExecSpace("ServerOnly")
+	method void ItemInit()
+		-- 데이터 스토리지에서 인벤토리 데이터를 불러옴
+		local userId = self.Entity.PlayerComponent.UserId
+		local userDataStorage = _DataStorageService:GetUserDataStorage(userId)
+		local errorCode, loadData = userDataStorage:GetAndWait("SimpleInventoryData")
+		
+		-- 데이터 로드에 실패하면 에러 코드 출력
+		if errorCode ~= 0 then
+			log_error("[SimpleInventory] 데이터 로딩 실패:" .. tostring(errorCode))
+			return
+		end
+		
+		-- 로드된 데이터가 있다면 적용
+		if loadData ~= nil then
+			self:Deserialize(loadData)
+		end
+		
+		-- 인벤토리 초기화 이벤트 발생
+		self:SendInitializedEvent()
+		
+		-- 일정 시간마다 자동 저장
+		local saveInventory = function()
+			local saveData = self:Serialize()
+			userDataStorage:SetAsync("SimpleInventoryData", saveData, function() log("[SimpleInventory] 저장 완료") end)
+			log("[SimpleInventory] 저장 중...")
+		end
+		
+		local saveInterval = 300
+		_TimerService:SetTimerRepeat(saveInventory, saveInterval, saveInterval)
+	end
+	
+	method string Serialize()
+		
+		local dataTable = {}
+		local itemStacks = {}
+		
+		dataTable.Meso = self.Meso
+		
+		for _, stack in pairs(self.ItemStacks) do
+			local stackData = stack:ToTable()
+			table.insert(itemStacks, stackData)
+		end
+		
+		if #itemStacks > 0 then
+			dataTable.ItemStacks = itemStacks
+		end
+		
+		return _HttpService:JSONEncode(dataTable)
+		
+	end
+	
+	method void Deserialize(string dataString)
+		if dataString == nil or dataString == "" then
+			return
+		end
+		
+		local dataTable = _HttpService:JSONDecode(dataString)
+		local meso = dataTable.Meso
+		local stacks = dataTable.ItemStacks
+		
+		self.Meso = math.tointeger(meso)
+		
+		if stacks ~= nil then
+			for _, stackData in pairs(stacks) do
+				local stack = ItemStack()
+				stack:FromTable(stackData)
+				self.ItemStacks[stack.SlotIndex] = stack
+			end
+		end
+	end
+	
+end

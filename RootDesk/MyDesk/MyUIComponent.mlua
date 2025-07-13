@@ -1,0 +1,4 @@
+@Component
+script MyUIComponent extends Component
+
+end

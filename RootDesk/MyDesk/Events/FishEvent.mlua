@@ -1,0 +1,10 @@
+@Event
+script FishEvent extends EventType
+
+	property string name = ""
+
+	property string iconRUID = ""
+
+	property string tier = ""
+
+end

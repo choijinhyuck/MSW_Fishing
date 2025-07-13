@@ -1,0 +1,225 @@
+@Component
+script FishingComponent extends Component
+
+	property ButtonComponent btn_GoToFishing = "a1cf234e-acb5-4613-aa61-e35a30c124e8"
+
+	property ButtonComponent btn_CatchButton = "a91b9c99-ae69-419b-b486-7b6677ac43c5"
+
+	property SpriteGUIRendererComponent panel_FishingPanel = "30488a22-506d-4ebf-961c-b71d9b53f39c"
+
+	property SpriteGUIRendererComponent panel_FishingResultPanel = "6c9b3b43-d790-4204-a1d4-f799e7e50968"
+
+	property TextComponent text_FishingStateText = "d5d84a2b-b1b4-41b1-a5f2-7045eaa96cf2"
+
+	property TextComponent text_FishName = "3c347323-05bc-467c-a3f9-d60fe0c37b92"
+
+	property SpriteGUIRendererComponent img_FishSprite = "ad45c978-93cd-40c0-8a50-ec6ceb87af1b"
+
+	property ButtonComponent btn_OkButton = "de4da64f-65c5-412e-9125-730635251c7d"
+
+	property integer timerId = 0
+
+	property TriggerComponent trigger_fishingArea = nil
+
+	property boolean _isFishing = false
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+		local a = ItemType()
+		
+		
+		
+		self:SetFishingState(false)
+		self.btn_GoToFishing.Entity:ConnectEvent(ButtonClickEvent, self.ToggleFishing)
+		self.btn_CatchButton.Entity:ConnectEvent(ButtonClickEvent, self.StartMiniGame)
+		self.btn_OkButton.Entity:ConnectEvent(ButtonClickEvent, self.CloseFishingResultPanel)
+		
+		print("hi")
+		
+		local ui_list = {
+			self.btn_CatchButton,
+			self.btn_GoToFishing,
+			self.panel_FishingPanel,
+			self.text_FishingStateText,
+			self.panel_FishingResultPanel
+		}
+		
+		for _, ui in ipairs(ui_list) do
+			self:Show(ui, false)
+		end
+	end
+
+	method void ToggleFishing()
+		if self:GetFishingState() == true then
+			self:StopFishing()
+		else
+			self:StartFishing()
+		end
+	end
+
+	method void StartFishing()
+		self:SetFishingState(true)
+		
+		
+		local callback = function()
+			self.text_FishingStateText.Text = "물었다!!"
+			self:ShowUICatchFish()
+			self.timerId = 0
+		end
+		local delaytime = math.random(3, 10)
+		self.timerId = _TimerService:SetTimerOnce(callback, delaytime)
+		
+		print("Start")
+		
+	end
+
+	method void StopFishing()
+		self:SetFishingState(false)
+		print("STop")
+	end
+
+	method void ShowUICatchFish()
+		self:Show(self.btn_CatchButton, true)
+	end
+
+	method void StartMiniGame()
+		self:Show(self.btn_CatchButton, false)
+		self:Show(self.text_FishingStateText, false)
+		
+		
+		print("minigame start")
+		
+		local callback = function()
+			print("minigame end")
+			_Fish:GetFish(1)
+			self.timerId = 0
+			self:SetFishingState(false)
+		end
+		self.timerId = _TimerService:SetTimerOnce(callback, 2)
+	end
+
+	@ExecSpace("Client")
+	method void GetFish(string fish_name, string fish_sprite_RUID)
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+		
+		self.img_FishSprite.ImageRUID = fish_sprite_RUID
+		self.text_FishName.Text = fish_name
+		self:Show(self.panel_FishingResultPanel, true)
+	end
+
+	@ExecSpace("Server")
+	method void GetFishInServer()
+		-- 실제 서버에 넣는 요청
+	end
+
+	method void CloseFishingResultPanel()
+		self:Show(self.panel_FishingResultPanel, false)
+			self.img_FishSprite:ChangeMaterial("")
+		self.text_FishName.Text = ""
+	end
+
+	method void SetFishingState(boolean isFishing)
+		self._isFishing = isFishing
+		if isFishing == true then
+			self:CloseFishingResultPanel()
+			_UserService.LocalPlayer.KinematicbodyComponent.Enable = false
+			_UserService.LocalPlayer.PlayerControllerComponent.Enable = false
+			self.text_FishingStateText.Text = "낚시 중..."
+			self.btn_GoToFishing.Entity.TextComponent.Text = "낚시 중단"
+			self:Show(self.text_FishingStateText, true)
+		else
+			_UserService.LocalPlayer.KinematicbodyComponent.Enable = true
+			_UserService.LocalPlayer.PlayerControllerComponent.Enable = true
+			--미니게임 패널 닫기
+			self.text_FishingStateText.Text = ""
+			self.btn_GoToFishing.Entity.TextComponent.Text = "낚시 시작"
+			self:Show(self.text_FishingStateText, false)
+			self:Show(self.btn_CatchButton, false)
+			if self.timerId ~= 0 then
+				_TimerService:ClearTimer(self.timerId)
+			end
+			self.timerId = 0
+		end
+	end
+
+	method boolean GetFishingState()
+		return self._isFishing
+	end
+
+	method void Show(Component component, boolean show)
+		component.Entity.Visible = show
+	end
+
+	@EventSender("LocalPlayer")
+	handler HandleTriggerEnterEvent(TriggerEnterEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: TriggerComponent
+		-- Space: Server, Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		local TriggerBodyEntity = event.TriggerBodyEntity
+		---------------------------------------------------------
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+		
+		if TriggerBodyEntity.TriggerComponent.CollisionGroup ~= CollisionGroups.FishingArea then
+			return
+		end
+		
+		if self.trigger_fishingArea == nil then
+			self:Show(self.btn_GoToFishing, true)
+		end
+		
+		self.trigger_fishingArea = TriggerBodyEntity.TriggerComponent
+		print("triggered")
+		
+	end
+
+	@EventSender("LocalPlayer")
+	handler HandleTriggerLeaveEvent(TriggerLeaveEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: TriggerComponent
+		-- Space: Server, Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		local TriggerBodyEntity = event.TriggerBodyEntity
+		---------------------------------------------------------
+		
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+		
+		if TriggerBodyEntity.TriggerComponent.CollisionGroup ~= CollisionGroups.FishingArea then
+			return
+		end
+		
+		if self.trigger_fishingArea == nil then
+			return
+		end
+		
+		if self.trigger_fishingArea.Entity == TriggerBodyEntity then
+			self:Show(self.btn_GoToFishing, false)
+			self.trigger_fishingArea = nil
+		end
+		
+	end
+
+	@EventSender("Self")
+	handler HandleFishEvent(FishEvent event)
+		-- Parameters
+		local name = event.name
+		local sprite = event.sprite
+		---------------------------------------------------------
+		self:GetFishInServer()
+		self:GetFish(name, sprite)
+	end
+
+end
