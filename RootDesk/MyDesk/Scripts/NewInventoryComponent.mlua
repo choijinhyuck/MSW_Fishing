@@ -1,20 +1,25 @@
 @Component
 script NewInventoryComponent extends Component
-	
-	@TargetUserSync
-	property SyncTable<string> item_list
-	
-	@TargetUserSync
+
 	property integer Meso = 0
-	
-	@TargetUserSync
+
 	property integer max_inventory_slot = 5
-	
+
+	property table ItemStacks = {}
+
 	@ExecSpace("ServerOnly")
 	method void OnBeginPlay()
 		self:ItemInit()
 	end
-	
+
+	method integer GetItemCount()
+		local count = 0
+		for _, stack in pairs(self.ItemStacks) do
+			count += stack.Count
+		end
+		return count
+	end
+
 	@ExecSpace("ServerOnly")
 	method void ItemInit()
 		-- 데이터 스토리지에서 인벤토리 데이터를 불러옴
@@ -46,7 +51,7 @@ script NewInventoryComponent extends Component
 		local saveInterval = 300
 		_TimerService:SetTimerRepeat(saveInventory, saveInterval, saveInterval)
 	end
-	
+
 	method string Serialize()
 		
 		local dataTable = {}
@@ -66,7 +71,7 @@ script NewInventoryComponent extends Component
 		return _HttpService:JSONEncode(dataTable)
 		
 	end
-	
+
 	method void Deserialize(string dataString)
 		if dataString == nil or dataString == "" then
 			return
@@ -86,5 +91,147 @@ script NewInventoryComponent extends Component
 			end
 		end
 	end
-	
+
+	@ExecSpace("ServerOnly")
+	method void SendInitializedEvent()
+		local event = SimpleInventoryInitializedEvent()
+		event.Meso = self.Meso
+		event.ItemStacks = self.ItemStacks
+		self.Entity:SendEvent(event)
+		
+		-- 로컬 플레이어에게만 전달
+		self:SendInitializedEventToClient(event, self.Entity.PlayerComponent.UserId)
+	end
+
+	@ExecSpace("Client")
+	method void SendInitializedEventToClient(SimpleInventoryInitializedEvent event)
+		self.Meso = event.Meso
+		self.ItemStacks = event.ItemStacks
+		self.Entity:SendEvent(event)
+		
+		self:SetInventory()
+	end
+
+	@ExecSpace("Server")
+	method void SellItems()
+		if #self.ItemStacks == 0 then
+			print("인벤토리가 비어있습니다.")
+			return
+		end
+		
+		local totalSellPrice = 0
+		for slotIndex, itemStack in pairs(self.ItemStacks) do
+			local itemInfo = _Item:GetItemInfo(itemStack.ItemId)
+			if itemInfo then
+				totalSellPrice += itemInfo.price * itemStack.Count
+				self.ItemStacks[slotIndex] = nil -- 아이템 판매 후 슬롯 비우기
+			end
+		end
+		
+		self.Meso += totalSellPrice
+		print("아이템 판매 완료. 총 금액:", totalSellPrice, "메소:", self.Meso)
+		
+		self:SycnAllItemsToClient(self.Meso, self.ItemStacks, senderUserId)
+	end
+
+	@ExecSpace("ServerOnly")
+	method void GetItem(string itemName)
+		if #self.ItemStacks < self.max_inventory_slot then
+			local ItemId = itemName
+			
+			for slot_index = 1, self.max_inventory_slot do
+				if self.ItemStacks[slot_index] == nil then
+					local itemStack = ItemStack()
+					itemStack.SlotIndex = slot_index
+					itemStack.ItemId = ItemId
+					itemStack.Count = 1
+					
+					self.ItemStacks[slot_index] = itemStack
+					print("[GetItem] 아이템 획득:", itemName, "슬롯 인덱스:", slot_index)
+					
+					local targetUserId = self.Entity.PlayerComponent.UserId
+					
+					self:SycnItemToClient(self.Meso, itemStack, slot_index, targetUserId)
+					return
+				end
+			end
+		else
+			print("인벤토리가 가득 찼습니다.")
+		end
+	end
+
+	@ExecSpace("Client")
+	method void SycnItemToClient(integer meso, ItemStack itemStack, integer slotIndex)
+		self.ItemStacks[slotIndex] = itemStack
+		self.Meso = meso
+		self:SetInventory()
+	end
+
+	@ExecSpace("Client")
+	method void SycnAllItemsToClient(integer meso, table itemStacks)
+		self.ItemStacks = itemStacks
+		self.Meso = meso
+		self:SetInventory()
+	end
+
+	@ExecSpace("Client")
+	method void SetInventory()
+		local try_count = 0
+		while _Item.isReady == false do
+			wait(0.1)
+			try_count += 1
+			print(try_count, "회")
+			if try_count > 10 then
+				print("[SetInventory] 아이템 데이터가 준비되지 않았습니다. 잠시 후 다시 시도합니다.")
+				return
+			end
+		end
+
+		local itemTable = {}
+		for _, itemStack in pairs(self.ItemStacks) do
+			local itemInfo = _Item:GetItemInfo(itemStack.ItemId)
+			print("iteminfo", itemInfo)
+			if itemInfo then
+				print("[SetInventory] 아이템 정보:", itemInfo.name, "슬롯 인덱스:", itemStack.SlotIndex, "개수:", itemStack.Count)
+			end
+			table.insert(itemTable, {itemInfo, itemStack.SlotIndex, itemStack.Count})
+		end
+
+		if #self.ItemStacks == 0 then
+			print("[SetInventory] 인벤토리가 비어있습니다.")
+		end
+		
+		local event = InventoryInitEvent()
+		event.itemTable = itemTable
+		event.meso = self.Meso
+
+		self.Entity:SendEvent(event)
+	end
+
+	@EventSender("Service", "UserService")
+	handler HandleUserLeaveEvent(UserLeaveEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: UserService
+		-- Space: Server
+		---------------------------------------------------------
+		
+		-- Parameters
+		-- local ProfileCode = event.ProfileCode
+		local UserId = event.UserId
+		---------------------------------------------------------
+		
+		local thisUserId = self.Entity.PlayerComponent.UserId
+		
+		if thisUserId ~= UserId then
+			return
+		end
+		
+		-- 플레이를 끝낼 때 인벤토리 데이터 정보를 저장함
+		local userDataStorage = _DataStorageService:GetUserDataStorage(thisUserId)
+		if userDataStorage ~= nil then
+			local saveData = self:Serialize()
+			userDataStorage:SetAndWait("SimpleInventoryData", saveData)
+		end
+	end
+
 end

@@ -23,7 +23,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 4,
           "pathConstraints": "//",
           "revision": 1,
@@ -83,7 +83,7 @@
             },
             {
               "@type": "MOD.Core.UIGroupComponent",
-              "DefaultShow": false,
+              "DefaultShow": true,
               "GroupOrder": 4,
               "GroupType": 2,
               "Enable": true
@@ -99,14 +99,14 @@
       {
         "id": "367aa5d9-dd61-42d3-954b-07a7bea97ef5",
         "path": "/ui/ItemGroup/Inventory",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent",
+        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,script.UIInventory",
         "jsonString": {
           "name": "Inventory",
           "path": "/ui/ItemGroup/Inventory",
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "///",
           "revision": 0,
@@ -229,6 +229,11 @@
               "RaycastTarget": true,
               "Type": 1,
               "Enable": true
+            },
+            {
+              "@type": "script.UIInventory",
+              "Enable": true,
+              "inventoryBtnPath": "/ui/FishingGroup/Inventory_Button"
             }
           ],
           "@version": 1
@@ -244,7 +249,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "////",
           "revision": 0,
@@ -382,7 +387,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "/////",
           "revision": 0,
@@ -567,7 +572,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 1,
           "pathConstraints": "/////",
           "revision": 0,
@@ -752,7 +757,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 2,
           "pathConstraints": "/////",
           "revision": 0,
@@ -890,7 +895,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "//////",
           "revision": 0,
@@ -1074,7 +1079,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 1,
           "pathConstraints": "//////",
           "revision": 0,
@@ -1212,7 +1217,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 3,
           "pathConstraints": "/////",
           "revision": 0,
@@ -1399,7 +1404,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "//////",
           "revision": 0,
@@ -1525,8 +1530,7 @@
             },
             {
               "@type": "script.UIItemSlot",
-              "Enable": true,
-              "itemGUID": ""
+              "Enable": true
             },
             {
               "@type": "MOD.Core.ButtonComponent",
@@ -1589,7 +1593,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "///////",
           "revision": 0,
@@ -1613,20 +1617,20 @@
               },
               "MobileOnly": false,
               "OffsetMax": {
-                "x": 77.0,
-                "y": 77.0
+                "x": 60.0,
+                "y": 60.0
               },
               "OffsetMin": {
-                "x": -77.0,
-                "y": -77.0
+                "x": -60.0,
+                "y": -60.0
               },
               "Pivot": {
                 "x": 0.5,
                 "y": 0.5
               },
               "RectSize": {
-                "x": 154.0,
-                "y": 154.0
+                "x": 120.0,
+                "y": 120.0
               },
               "UIMode": 1,
               "UIScale": {
@@ -1659,7 +1663,7 @@
             },
             {
               "@type": "MOD.Core.SpriteGUIRendererComponent",
-              "AnimClipPlayType": 0,
+              "AnimClipPlayType": 1,
               "EndFrameIndex": 2147483647,
               "ImageRUID": {
                 "DataId": "3e9d52ed52d64794bbd6f72bab8ee3d9"
@@ -1694,7 +1698,7 @@
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
-              "FillMethod": 0,
+              "FillMethod": 1,
               "FillOrigin": 0,
               "FlipX": false,
               "FlipY": false,
@@ -1711,190 +1715,6 @@
               "OutlineWidth": 3.0,
               "RaycastTarget": true,
               "Type": 1,
-              "Enable": true
-            }
-          ],
-          "@version": 1
-        }
-      },
-      {
-        "id": "9f022d1f-263a-44d9-a798-35c0e05e4c0c",
-        "path": "/ui/ItemGroup/Inventory/InventoryPanel/Inventory_ScrollView/item_slot/img_slot/item_count",
-        "componentNames": "MOD.Core.UITransformComponent,MOD.Core.SpriteGUIRendererComponent,MOD.Core.TextComponent",
-        "jsonString": {
-          "name": "item_count",
-          "path": "/ui/ItemGroup/Inventory/InventoryPanel/Inventory_ScrollView/item_slot/img_slot/item_count",
-          "nameEditable": true,
-          "enable": true,
-          "visible": true,
-          "localize": false,
-          "displayOrder": 0,
-          "pathConstraints": "////////",
-          "revision": 0,
-          "origin": {
-            "type": "Model",
-            "entry_id": "UISprite",
-            "sub_entity_id": null
-          },
-          "modelId": "uisprite",
-          "@components": [
-            {
-              "@type": "MOD.Core.UITransformComponent",
-              "AlignmentOption": 7,
-              "AnchorsMax": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "AnchorsMin": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "MobileOnly": false,
-              "OffsetMax": {
-                "x": 46.0,
-                "y": 46.0
-              },
-              "OffsetMin": {
-                "x": 6.0,
-                "y": 6.0
-              },
-              "Pivot": {
-                "x": 0.5,
-                "y": 0.5
-              },
-              "RectSize": {
-                "x": 40.0,
-                "y": 40.0
-              },
-              "UIMode": 1,
-              "UIScale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "UIVersion": 2,
-              "anchoredPosition": {
-                "x": 26.0,
-                "y": 26.0
-              },
-              "Position": {
-                "x": -51.0,
-                "y": -51.0,
-                "z": 0.0
-              },
-              "QuaternionRotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
-              },
-              "Scale": {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0
-              },
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.SpriteGUIRendererComponent",
-              "AnimClipPlayType": 0,
-              "EndFrameIndex": 2147483647,
-              "ImageRUID": {
-                "DataId": "ef10e046811ace04db1ab45ae6077d4e"
-              },
-              "LocalPosition": {
-                "x": 0.0,
-                "y": 0.0
-              },
-              "LocalScale": {
-                "x": 1.0,
-                "y": 1.0
-              },
-              "OverrideSorting": false,
-              "PlayRate": 1.0,
-              "PreserveSprite": 0,
-              "StartFrameIndex": 0,
-              "Color": {
-                "r": 0.152941182,
-                "g": 0.152941182,
-                "b": 0.152941182,
-                "a": 0.8
-              },
-              "DropShadow": false,
-              "DropShadowAngle": 30.0,
-              "DropShadowColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 0.72
-              },
-              "DropShadowDistance": 32.0,
-              "FillAmount": 1.0,
-              "FillCenter": true,
-              "FillClockWise": true,
-              "FillMethod": 0,
-              "FillOrigin": 0,
-              "FlipX": false,
-              "FlipY": false,
-              "FrameColumn": 1,
-              "FrameRate": 0,
-              "FrameRow": 1,
-              "Outline": false,
-              "OutlineColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 1.0
-              },
-              "OutlineWidth": 3.0,
-              "RaycastTarget": true,
-              "Type": 1,
-              "Enable": true
-            },
-            {
-              "@type": "MOD.Core.TextComponent",
-              "Alignment": 4,
-              "Bold": false,
-              "DropShadow": false,
-              "DropShadowAngle": 30.0,
-              "DropShadowColor": {
-                "r": 0.0,
-                "g": 0.0,
-                "b": 0.0,
-                "a": 0.72
-              },
-              "DropShadowDistance": 32.0,
-              "Font": 0,
-              "FontColor": {
-                "r": 1.0,
-                "g": 1.0,
-                "b": 1.0,
-                "a": 1.0
-              },
-              "FontSize": 30,
-              "MaxSize": 40,
-              "MinSize": 10,
-              "OutlineColor": {
-                "r": 0.7,
-                "g": 0.7,
-                "b": 0.7,
-                "a": 1.0
-              },
-              "OutlineDistance": {
-                "x": 1.0,
-                "y": -1.0
-              },
-              "Overflow": 0,
-              "OverrideSorting": false,
-              "Padding": {
-                "left": 0,
-                "right": 0,
-                "top": 0,
-                "bottom": 0
-              },
-              "SizeFit": false,
-              "Text": "0",
-              "UseOutLine": false,
               "Enable": true
             }
           ],
@@ -1911,7 +1731,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 4,
           "pathConstraints": "/////",
           "revision": 0,
@@ -2049,7 +1869,7 @@
           "nameEditable": true,
           "enable": true,
           "visible": true,
-          "localize": false,
+          "localize": true,
           "displayOrder": 0,
           "pathConstraints": "//////",
           "revision": 0,

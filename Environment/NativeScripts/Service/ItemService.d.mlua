@@ -13,10 +13,10 @@ script ItemService extends Service
 	@ExecSpace("ServerOnly")
 	method void ChangeOwner(string itemGUID, InventoryComponent owner) end
 
-	---@description "Creates an item of the corresponding itemType. By entering tableDataName, you can retrieve data matching the Name among the data in DataSets/DataSets/UserItemDataSets prepared in advance. In UserItemDataSets, Name, IconRUID, and Description columns should be created as default, and additional columns can be added as needed."
+	---@description "Creates an item of the corresponding itemInfo. By entering tableDataName, you can retrieve data matching the Name among the data in DataSets/DataSets/UserItemDataSets prepared in advance. In UserItemDataSets, Name, IconRUID, and Description columns should be created as default, and additional columns can be added as needed."
 	---@sealed
 	@ExecSpace("ServerOnly")
-	method Item CreateItem(Type itemType, string itemDataTableName, InventoryComponent ownerInventoryComponent = nil) end
+	method Item CreateItem(Type itemInfo, string itemDataTableName, InventoryComponent ownerInventoryComponent = nil) end
 
 	---@description "Uses the item GUID to get the cached item on the server."
 	---@sealed

@@ -1,18 +1,28 @@
 @Component
 script UIItemSlot extends Component
 
-	property any item = nil
+	property any itemInfo = nil
 
-	property string itemGUID = ""
+	property number ItemCount = 0
 
-	method void SetData(any item)
-		self.item = item
+	property string baseRUID = "3e9d52ed52d64794bbd6f72bab8ee3d9"
+
+	method void SetData(ItemInfo item)
+		self.itemInfo = item
 		
 		local imageEntity = self.Entity:GetChildByName("img_slot")
-		imageEntity.SpriteGUIRendererComponent.ImageRUID = item.IconRUID
 		
-		imageEntity:GetChildByName("item_count").TextComponent.Text = tostring(item.ItemCount)
-		self.itemGUID = item.GUID
+		
+		if item == nil then
+			imageEntity.SpriteGUIRendererComponent.ImageRUID = ""
+			imageEntity.Visible = false
+		else
+			imageEntity.SpriteGUIRendererComponent.ImageRUID = self.itemInfo.iconRUID
+			imageEntity.Visible = true
+		end
+		
+		--imageEntity:GetChildByName("item_count").TextComponent.Text = tostring(self.ItemCount)
+		
 	end
 
 	@EventSender("Self")
@@ -21,7 +31,7 @@ script UIItemSlot extends Component
 		local Entity = event.Entity
 		--------------------------------------------------------
 		
-		if self.item == nil then
+		if self.itemInfo == nil then
 			return
 		end
 		

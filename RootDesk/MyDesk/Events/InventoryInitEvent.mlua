@@ -1,0 +1,8 @@
+@Event
+script InventoryInitEvent extends EventType
+
+	property table itemTable = {}
+
+	property integer meso = 0
+
+end

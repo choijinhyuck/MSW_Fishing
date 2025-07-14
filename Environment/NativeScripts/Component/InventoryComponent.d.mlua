@@ -12,7 +12,7 @@ script InventoryComponent extends Component
 
 	---@description "Brings the input type item among the owned ones."
 	---@sealed
-	method table<Item> GetItemsWithType(Type itemType) end
+	method table<Item> GetItemsWithType(Type itemInfo) end
 
 	emitter EmitInventoryItemAddedEvent(InventoryItemAddedEvent event) end
 

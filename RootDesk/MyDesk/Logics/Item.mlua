@@ -3,27 +3,48 @@ script Item extends Logic
 
 	property table itemList = {}
 
-	@ExecSpace("ServerOnly")
+	property boolean isReady = false
+
 	method void OnBeginPlay()
-		self:LoadItemList()
+		self:LoadItemListInServer()
 	end
 
-	method void LoadItemList()
+	@ExecSpace("Server")
+	method void LoadItemListInServer()
+		if self.itemList ~= nil and next(self.itemList) ~= nil then
+			self:LoadItemListInClient(self.itemList, senderUserId)
+			return
+		end
+
 		local rows = _DataService:GetTable("FishTable"):GetAllRow() or {}
 		self.itemList = {}
+		
 		for i, row in ipairs(rows) do
-			local item = ItemType()
-			item.name = row["Name"] or ""
-			item.iconRUID = row["SpriteRUID"] or ""
-			item.description = row["Description"] or ""
-			item.price = tonumber(row["Price"]) or 0
+			local item = ItemInfo()
+			item.name = row:GetItem("Name") or ""
+			item.iconRUID = row:GetItem("SpriteRUID") or ""
+			item.tier = row:GetItem("Tier") or ""
+			item.description = row:GetItem("Description") or ""
+			item.price = tonumber(row:GetItem("Price")) or 0
 			if item.name ~= "" then
 				self.itemList[item.name] = item
 			end
 		end
+		
+		self:LoadItemListInClient(self.itemList, senderUserId)
 	end
 
-	method ItemType GetItemInfo(string itemName)
+	@ExecSpace("Client")
+	method void LoadItemListInClient(table itemList)
+		if itemList == nil or next(itemList) == nil then return end
+
+		self.itemList = itemList
+		self.isReady = true
+		print("아이템 로드 완료")	
+	end
+
+	method ItemInfo GetItemInfo(string itemName)
 		return self.itemList[itemName]
 	end
+
 end

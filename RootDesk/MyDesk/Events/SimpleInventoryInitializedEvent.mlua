@@ -1,0 +1,8 @@
+@Event
+script SimpleInventoryInitializedEvent extends EventType
+
+	property integer Meso = 0
+
+	property table ItemStacks = {}
+
+end

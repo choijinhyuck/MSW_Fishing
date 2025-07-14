@@ -1,0 +1,55 @@
+@Component
+script SellFishComponent extends Component
+
+	property Entity btn_Sell = "57f7fb4d-e570-4ccd-81ba-efb3de0267c1"
+
+	method void Show(Entity entity, boolean show)
+		entity:SetEnable(show)
+		entity.Visible = show
+	end
+
+	@ExecSpace("ClientOnly")
+	method void OnBeginPlay()
+		self.btn_Sell:ConnectEvent(ButtonClickEvent, self.Sell)
+	end
+
+	@ExecSpace("ClientOnly")
+	method void Sell()
+		_UserService.LocalPlayer.NewInventoryComponent:SellItems()
+	end
+
+	@EventSender("LocalPlayer")
+	handler HandleTriggerEnterEvent(TriggerEnterEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: TriggerComponent
+		-- Space: Server, Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		 local TriggerBodyEntity = event.TriggerBodyEntity
+		---------------------------------------------------------
+		
+		if TriggerBodyEntity == self.Entity then
+		    --판매하기 버튼 show
+			self:Show(self.btn_Sell, true)
+		end
+	end
+
+	@EventSender("LocalPlayer")
+	handler HandleTriggerLeaveEvent(TriggerLeaveEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: TriggerComponent
+		-- Space: Server, Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		 local TriggerBodyEntity = event.TriggerBodyEntity
+		---------------------------------------------------------
+		
+		if TriggerBodyEntity == self.Entity then
+			self:Show(self.btn_Sell, false)
+		end
+		
+	end
+
+end

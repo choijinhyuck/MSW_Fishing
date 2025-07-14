@@ -1,0 +1,10 @@
+@Event
+script SetInventoryEvent extends EventType
+
+	property string itemName = ""
+
+	property string iconRUID = ""
+
+	property string description = ""
+
+end

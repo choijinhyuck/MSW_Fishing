@@ -41,6 +41,10 @@
         {
           "Id": "c04f80c1e2e34759b09a6ecdcf3864a9",
           "Name": "FishingArea"
+        },
+        {
+          "Id": "c4dcb326d31f4d2eb48ec743a313b5d4",
+          "Name": "Npc"
         }
       ],
       "Matrix": {
@@ -48,22 +52,32 @@
           "35a588cf0d614247911464dec22e1a18"
         ],
         "MOD@TriggerBox": [
+          "35a588cf0d614247911464dec22e1a18",
           "MOD@TriggerBox",
-          "c04f80c1e2e34759b09a6ecdcf3864a9"
+          "c04f80c1e2e34759b09a6ecdcf3864a9",
+          "c4dcb326d31f4d2eb48ec743a313b5d4"
         ],
         "MOD@HitBox": [
+          "35a588cf0d614247911464dec22e1a18",
           "MOD@HitBox"
         ],
         "MOD@Interaction": [
+          "35a588cf0d614247911464dec22e1a18",
           "MOD@Interaction"
         ],
         "MOD@Portal": [
+          "35a588cf0d614247911464dec22e1a18",
           "MOD@Portal"
         ],
         "MOD@Climbable": [
+          "35a588cf0d614247911464dec22e1a18",
           "MOD@Climbable"
         ],
         "c04f80c1e2e34759b09a6ecdcf3864a9": [
+          "35a588cf0d614247911464dec22e1a18",
+          "MOD@TriggerBox"
+        ],
+        "c4dcb326d31f4d2eb48ec743a313b5d4": [
           "MOD@TriggerBox"
         ]
       }

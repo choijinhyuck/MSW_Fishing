@@ -1,167 +1,159 @@
 @Logic
 script Fish extends Logic
-    
-    property table fishTable = nil
-    
-    property number sigma = 1
-    
-    property number shift_factor = 0.75
-    
-    @ExecSpace("ServerOnly")
-    method void OnBeginPlay()
-        math.randomseed(os.time()) -- 랜덤 시드 초기화
-        self.fishTable = self:GetFishTableRows()
-        
-        -- self:TestFishDistributionByLevel() -- 테스트용
-    end
-    
-    method table GetFishTableRows()
-        local ds = _DataService:GetTable("FishTable")
-        if ds == nil then return {} end
-        return ds:GetAllRow() or {}
-    end
-    
-    method table GetAvailableFishByLevel(integer player_level)
-        return self.fishTable or {}
-    end
-    
-    @ExecSpace("Server")
-    method void GetFish(integer player_level)
-        local result = self:GetRandomFish(player_level)
-        local event = FishEvent()
-        event.name = result:GetItem("Name") or "알 수 없는 물고기"
-        event.sprite = result:GetItem("SpriteRUID") or ""
-        local userEntity = _UserService:GetUserEntityByUserId(senderUserId)
-        print(senderUserId)
-        userEntity:SendEvent(event)
-        self:useridcheck()
-    end
-    
-    @ExecSpace("Server")
-    method void useridcheck()
-        print("userid")
-        print(senderUserId)
-    end
-    
-    @ExecSpace("Server")
-    method any GetRandomFish(integer player_level)
-        local available = self:GetAvailableFishByLevel(player_level)
-        if #available == 0 then
-            print("[GetRandomFish] No available fish for player_level:", player_level)
-            return nil
-        end
-        -- 1. 티어별로 그룹화 및 unlock된 티어만 추출
-        local tier_map, unlocked, min_tier, max_tier = {}, {}, math.huge, -math.huge
-        for _, row in ipairs(available) do
-            local tier = tonumber(row:GetItem("Tier")) or 1
-            if not tier_map[tier] then tier_map[tier] = {} end
-            table.insert(tier_map[tier], row)
-            if player_level >= 1 + (tier - 1) * 10 then
-                unlocked[tier] = true
-                if tier < min_tier then min_tier = tier end
-                if tier > max_tier then max_tier = tier end
-            end
-        end
-        if min_tier > max_tier then
-            print("[GetRandomFish] No unlocked tier for player_level:", player_level, "unlocked:", unlocked)
-            return nil -- unlock된 티어 없음
-        end
-        -- 2. 곡선 중심(mu): unlock된 티어 구간 내에서 shift 위치
-        local sigma = self.sigma or 1
-        local shift = self.shift_factor or 0.5
-        local tmin, tmax = min_tier, max_tier
-        local mu = tmin + (tmax - tmin) * shift
-        -- 3. unlock된 티어만 정규분포 확률 계산 및 정규화
-        local tier_weights, total_tier_weight = {}, 0
-        for tier = tmin, tmax do
-            if unlocked[tier] then
-                local w = math.exp(-((tier - mu) ^ 2) / (2 * sigma ^ 2))
-                tier_weights[tier] = w
-                total_tier_weight = total_tier_weight + w
-            end
-        end
-        if total_tier_weight == 0 then
-            print("[GetRandomFish] total_tier_weight is 0. tier_weights:", tier_weights)
-            return nil
-        end
-        -- 4. 티어 추첨
-        local r, acc, selected_tier = math.random(), 0, tmin
-        for tier = tmin, tmax do
-            if unlocked[tier] then
-                acc = acc + tier_weights[tier] / total_tier_weight
-                if r <= acc then selected_tier = tier;break end
-            end
-        end
-        -- 5. 해당 티어 내에서 rarity 기반 추첨
-        local candidates = tier_map[selected_tier]
-        if not candidates or #candidates == 0 then
-            print("[GetRandomFish] No candidates in selected_tier:", selected_tier)
-            return nil
-        end
-        local weights, total_weight = {}, 0
-        for i, row in ipairs(candidates) do
-            local rarity = tonumber(row:GetItem("Rarity")) or 1
-            local weight = 1 / rarity
-            weights[i] = weight
-            total_weight = total_weight + weight
-        end
-        if total_weight == 0 then
-            print("[GetRandomFish] total_weight is 0 in candidates for tier:", selected_tier)
-            return nil
-        end
-        local r2, acc2 = math.random(), 0
-        for i, row in ipairs(candidates) do
-            acc2 = acc2 + weights[i] / total_weight
-            if r2 <= acc2 then
-                print("[GetRandomFish] Selected fish:", row:GetItem("Name"), "tier:", selected_tier, "player_level:", player_level)
-                return row
-            end
-        end
-        print("[GetRandomFish] Fallback to last candidate in tier:", selected_tier)
-        return candidates[#candidates]
-    end
-    
-    method void TestFishDistributionByLevel()
-        local test_levels = {1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 100}
-        local test_count = 1000
-        for _, level in ipairs(test_levels) do
-            local result_count = {}
-            local tier_count = {}
-            local name_to_tier = {}
-            for i = 1, test_count do
-                local row = self:GetRandomFish(level)
-                if row ~= nil then
-                    local name = row:GetItem("Name") or ("Fish_" .. tostring(i))
-                    local tier = tonumber(row:GetItem("Tier")) or 1
-                    result_count[name] = (result_count[name] or 0) + 1
-                    tier_count[tier] = (tier_count[tier] or 0) + 1
-                    name_to_tier[name] = tier
-                else
-                    result_count["None"] = (result_count["None"] or 0) + 1
-                end
-            end
-            print("[Level " .. tostring(level) .. "] 결과:")
-            -- 원본 row 순서대로 출력
-            for _, row in ipairs(self.fishTable or {}) do
-                local name = row:GetItem("Name")
-                if name then
-                    local cnt = result_count[name] or 0
-                    print("  " .. name .. ": " .. tostring(cnt))
-                end
-            end
-            if result_count["None"] then
-                print("  None: " .. tostring(result_count["None"]))
-            end
-            -- 티어별 합계 출력
-            print("  [티어별 합계]")
-            -- 티어 오름차순 정렬
-            local tiers = {}
-            for tier, _ in pairs(tier_count) do table.insert(tiers, tier) end
-            table.sort(tiers)
-            for _, tier in ipairs(tiers) do
-                print("    Tier " .. tostring(tier) .. ": " .. tostring(tier_count[tier]))
-            end
-        end
-    end
-    
+	
+	property table fishTable = nil
+	
+	property number sigma = 1
+	
+	property number shift_factor = 0.75
+	
+	@ExecSpace("ServerOnly")
+	method void OnBeginPlay()
+		math.randomseed(os.time()) -- 랜덤 시드 초기화
+		self.fishTable = self:GetFishTableRows()
+		
+		-- self:TestFishDistributionByLevel() -- 테스트용
+	end
+	
+	method table GetFishTableRows()
+		local ds = _DataService:GetTable("FishTable")
+		if ds == nil then return {} end
+		return ds:GetAllRow() or {}
+	end
+	
+	method table GetAvailableFishByLevel(integer player_level)
+		return self.fishTable or {}
+	end
+	
+	@ExecSpace("Server")
+	method void GetFish(integer player_level)
+		local result = self:GetRandomFish(player_level)
+		local event = FishEvent()
+		event.name = result:GetItem("Name") or "알 수 없는 물고기"
+		event.iconRUID = result:GetItem("SpriteRUID") or ""
+		local userEntity = _UserService:GetUserEntityByUserId(senderUserId)
+		userEntity:SendEvent(event)
+	end
+	
+	@ExecSpace("Server")
+	method any GetRandomFish(integer player_level)
+		local available = self:GetAvailableFishByLevel(player_level)
+		if #available == 0 then
+			print("[GetRandomFish] No available fish for player_level:", player_level)
+			return nil
+		end
+		-- 1. 티어별로 그룹화 및 unlock된 티어만 추출
+		local tier_map, unlocked, min_tier, max_tier = {}, {}, math.huge, -math.huge
+		for _, row in ipairs(available) do
+			local tier = tonumber(row:GetItem("Tier")) or 1
+			if not tier_map[tier] then tier_map[tier] = {} end
+			table.insert(tier_map[tier], row)
+			if player_level >= 1 + (tier - 1) * 10 then
+				unlocked[tier] = true
+				if tier < min_tier then min_tier = tier end
+				if tier > max_tier then max_tier = tier end
+			end
+		end
+		if min_tier > max_tier then
+			print("[GetRandomFish] No unlocked tier for player_level:", player_level, "unlocked:", unlocked)
+			return nil -- unlock된 티어 없음
+		end
+		-- 2. 곡선 중심(mu): unlock된 티어 구간 내에서 shift 위치
+		local sigma = self.sigma or 1
+		local shift = self.shift_factor or 0.5
+		local tmin, tmax = min_tier, max_tier
+		local mu = tmin + (tmax - tmin) * shift
+		-- 3. unlock된 티어만 정규분포 확률 계산 및 정규화
+		local tier_weights, total_tier_weight = {}, 0
+		for tier = tmin, tmax do
+			if unlocked[tier] then
+				local w = math.exp(-((tier - mu) ^ 2) / (2 * sigma ^ 2))
+				tier_weights[tier] = w
+				total_tier_weight = total_tier_weight + w
+			end
+		end
+		if total_tier_weight == 0 then
+			print("[GetRandomFish] total_tier_weight is 0. tier_weights:", tier_weights)
+			return nil
+		end
+		-- 4. 티어 추첨
+		local r, acc, selected_tier = math.random(), 0, tmin
+		for tier = tmin, tmax do
+			if unlocked[tier] then
+				acc = acc + tier_weights[tier] / total_tier_weight
+				if r <= acc then selected_tier = tier;break end
+			end
+		end
+		-- 5. 해당 티어 내에서 rarity 기반 추첨
+		local candidates = tier_map[selected_tier]
+		if not candidates or #candidates == 0 then
+			print("[GetRandomFish] No candidates in selected_tier:", selected_tier)
+			return nil
+		end
+		local weights, total_weight = {}, 0
+		for i, row in ipairs(candidates) do
+			local rarity = tonumber(row:GetItem("Rarity")) or 1
+			local weight = 1 / rarity
+			weights[i] = weight
+			total_weight = total_weight + weight
+		end
+		if total_weight == 0 then
+			print("[GetRandomFish] total_weight is 0 in candidates for tier:", selected_tier)
+			return nil
+		end
+		local r2, acc2 = math.random(), 0
+		for i, row in ipairs(candidates) do
+			acc2 = acc2 + weights[i] / total_weight
+			if r2 <= acc2 then
+				print("[GetRandomFish] Selected fish:", row:GetItem("Name"), "tier:", selected_tier, "player_level:", player_level)
+				return row
+			end
+		end
+		print("[GetRandomFish] Fallback to last candidate in tier:", selected_tier)
+		return candidates[#candidates]
+	end
+	
+	method void TestFishDistributionByLevel()
+		local test_levels = {1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 100}
+		local test_count = 1000
+		for _, level in ipairs(test_levels) do
+			local result_count = {}
+			local tier_count = {}
+			local name_to_tier = {}
+			for i = 1, test_count do
+				local row = self:GetRandomFish(level)
+				if row ~= nil then
+					local name = row:GetItem("Name") or ("Fish_" .. tostring(i))
+					local tier = tonumber(row:GetItem("Tier")) or 1
+					result_count[name] = (result_count[name] or 0) + 1
+					tier_count[tier] = (tier_count[tier] or 0) + 1
+					name_to_tier[name] = tier
+				else
+					result_count["None"] = (result_count["None"] or 0) + 1
+				end
+			end
+			print("[Level " .. tostring(level) .. "] 결과:")
+			-- 원본 row 순서대로 출력
+			for _, row in ipairs(self.fishTable or {}) do
+				local name = row:GetItem("Name")
+				if name then
+					local cnt = result_count[name] or 0
+					print("  " .. name .. ": " .. tostring(cnt))
+				end
+			end
+			if result_count["None"] then
+				print("  None: " .. tostring(result_count["None"]))
+			end
+			-- 티어별 합계 출력
+			print("  [티어별 합계]")
+			-- 티어 오름차순 정렬
+			local tiers = {}
+			for tier, _ in pairs(tier_count) do table.insert(tiers, tier) end
+			table.sort(tiers)
+			for _, tier in ipairs(tiers) do
+				print("    Tier " .. tostring(tier) .. ": " .. tostring(tier_count[tier]))
+			end
+		end
+	end
+	
 end

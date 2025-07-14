@@ -1,0 +1,20 @@
+@Struct
+script ItemStack
+
+	property integer SlotIndex = 0
+
+	property string ItemId = ""
+
+	property integer Count = 0
+
+	method table ToTable()
+		return { SlotIndex = self.SlotIndex, ItemId = self.ItemId, Count = self.Count }
+	end
+
+	method void FromTable(table data)
+		self.SlotIndex = data.SlotIndex
+		self.ItemId = data.ItemId
+		self.Count = data.Count
+	end
+
+end

@@ -1,36 +1,39 @@
 @Component
 script FishingComponent extends Component
-
+	
 	property ButtonComponent btn_GoToFishing = "a1cf234e-acb5-4613-aa61-e35a30c124e8"
-
+	
 	property ButtonComponent btn_CatchButton = "a91b9c99-ae69-419b-b486-7b6677ac43c5"
-
+	
 	property SpriteGUIRendererComponent panel_FishingPanel = "30488a22-506d-4ebf-961c-b71d9b53f39c"
-
+	
 	property SpriteGUIRendererComponent panel_FishingResultPanel = "6c9b3b43-d790-4204-a1d4-f799e7e50968"
-
+	
 	property TextComponent text_FishingStateText = "d5d84a2b-b1b4-41b1-a5f2-7045eaa96cf2"
-
+	
 	property TextComponent text_FishName = "3c347323-05bc-467c-a3f9-d60fe0c37b92"
-
+	
 	property SpriteGUIRendererComponent img_FishSprite = "ad45c978-93cd-40c0-8a50-ec6ceb87af1b"
-
+	
 	property ButtonComponent btn_OkButton = "de4da64f-65c5-412e-9125-730635251c7d"
-
+	
+	property ButtonComponent btn_SellButton = "57f7fb4d-e570-4ccd-81ba-efb3de0267c1"
+	
+	property SpriteGUIRendererComponent panel_Inventory = "367aa5d9-dd61-42d3-954b-07a7bea97ef5"
+	
+	property ButtonComponent btn_Inventory = "aa44d8fb-208f-4966-8957-fd4d949d7518"
+	
 	property integer timerId = 0
-
+	
 	property TriggerComponent trigger_fishingArea = nil
-
+	
 	property boolean _isFishing = false
-
+	
 	@ExecSpace("ClientOnly")
 	method void OnBeginPlay()
 		if _UserService.LocalPlayer ~= self.Entity then
 			return
 		end
-		local a = ItemType()
-		
-		
 		
 		self:SetFishingState(false)
 		self.btn_GoToFishing.Entity:ConnectEvent(ButtonClickEvent, self.ToggleFishing)
@@ -39,27 +42,35 @@ script FishingComponent extends Component
 		
 		print("hi")
 		
-		local ui_list = {
+		local Not_Showing_UI = {
 			self.btn_CatchButton,
-			self.btn_GoToFishing,
 			self.panel_FishingPanel,
 			self.text_FishingStateText,
-			self.panel_FishingResultPanel
+			self.panel_FishingResultPanel,
+			self.btn_SellButton,
+			self.panel_Inventory,
 		}
 		
-		for _, ui in ipairs(ui_list) do
+		for _, ui in ipairs(Not_Showing_UI) do
 			self:Show(ui, false)
 		end
+		
+		self.btn_GoToFishing.Enable = false
 	end
-
+	
 	method void ToggleFishing()
 		if self:GetFishingState() == true then
 			self:StopFishing()
 		else
+			local inventory = self.Entity.NewInventoryComponent
+			if inventory:GetItemCount() >= inventory.max_inventory_slot then
+				print("인벤토리가 가득 찼습니다.")
+				return
+			end
 			self:StartFishing()
 		end
 	end
-
+	
 	method void StartFishing()
 		self:SetFishingState(true)
 		
@@ -75,16 +86,16 @@ script FishingComponent extends Component
 		print("Start")
 		
 	end
-
+	
 	method void StopFishing()
 		self:SetFishingState(false)
 		print("STop")
 	end
-
+	
 	method void ShowUICatchFish()
 		self:Show(self.btn_CatchButton, true)
 	end
-
+	
 	method void StartMiniGame()
 		self:Show(self.btn_CatchButton, false)
 		self:Show(self.text_FishingStateText, false)
@@ -100,7 +111,7 @@ script FishingComponent extends Component
 		end
 		self.timerId = _TimerService:SetTimerOnce(callback, 2)
 	end
-
+	
 	@ExecSpace("Client")
 	method void GetFish(string fish_name, string fish_sprite_RUID)
 		if _UserService.LocalPlayer ~= self.Entity then
@@ -111,18 +122,18 @@ script FishingComponent extends Component
 		self.text_FishName.Text = fish_name
 		self:Show(self.panel_FishingResultPanel, true)
 	end
-
+	
 	@ExecSpace("Server")
 	method void GetFishInServer()
 		-- 실제 서버에 넣는 요청
 	end
-
+	
 	method void CloseFishingResultPanel()
 		self:Show(self.panel_FishingResultPanel, false)
-			self.img_FishSprite:ChangeMaterial("")
+		self.img_FishSprite.ImageRUID = ""
 		self.text_FishName.Text = ""
 	end
-
+	
 	method void SetFishingState(boolean isFishing)
 		self._isFishing = isFishing
 		if isFishing == true then
@@ -146,15 +157,16 @@ script FishingComponent extends Component
 			self.timerId = 0
 		end
 	end
-
+	
 	method boolean GetFishingState()
 		return self._isFishing
 	end
-
+	
 	method void Show(Component component, boolean show)
+		component.Entity:SetEnable(show)
 		component.Entity.Visible = show
 	end
-
+	
 	@EventSender("LocalPlayer")
 	handler HandleTriggerEnterEvent(TriggerEnterEvent event)
 		--------------- Native Event Sender Info ----------------
@@ -174,14 +186,15 @@ script FishingComponent extends Component
 		end
 		
 		if self.trigger_fishingArea == nil then
-			self:Show(self.btn_GoToFishing, true)
+			-- self:Show(self.btn_GoToFishing, true)
+			self.btn_GoToFishing.Enable = true
 		end
 		
 		self.trigger_fishingArea = TriggerBodyEntity.TriggerComponent
 		print("triggered")
 		
 	end
-
+	
 	@EventSender("LocalPlayer")
 	handler HandleTriggerLeaveEvent(TriggerLeaveEvent event)
 		--------------- Native Event Sender Info ----------------
@@ -206,20 +219,21 @@ script FishingComponent extends Component
 		end
 		
 		if self.trigger_fishingArea.Entity == TriggerBodyEntity then
-			self:Show(self.btn_GoToFishing, false)
+			-- self:Show(self.btn_GoToFishing, false)
+			self.btn_GoToFishing.Enable = false
 			self.trigger_fishingArea = nil
 		end
 		
 	end
-
+	
 	@EventSender("Self")
 	handler HandleFishEvent(FishEvent event)
 		-- Parameters
 		local name = event.name
-		local sprite = event.sprite
+		local sprite = event.iconRUID
 		---------------------------------------------------------
-		self:GetFishInServer()
+		self.Entity.NewInventoryComponent:GetItem(name)
 		self:GetFish(name, sprite)
 	end
-
+	
 end
