@@ -134,7 +134,7 @@ script NewInventoryComponent extends Component
 		self:SycnAllItemsToClient(self.Meso, self.ItemStacks, senderUserId)
 	end
 
-	@ExecSpace("ServerOnly")
+	@ExecSpace("Server")
 	method void GetItem(string itemName)
 		if #self.ItemStacks < self.max_inventory_slot then
 			local ItemId = itemName

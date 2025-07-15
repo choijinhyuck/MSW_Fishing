@@ -1,0 +1,201 @@
+@Component
+script MiniGameComponent extends Component
+
+	property number fishPower = 0
+
+	property number playerPower = 0
+
+	property number gauge = 0
+
+	property number distance = 1
+
+	property boolean isFishing = false
+
+	property string state = "idle"
+
+	property number dangerTime = 0
+
+	property boolean isMouseDown = false
+
+	property Entity ui_gauge = "77215358-6b55-4647-b8e5-d640b1a7de41"
+
+	property number maxwidth = 642.0894
+
+	property Entity distance_gauge = "702f0285-0d26-4889-8af6-5ac0d8107ba4"
+
+	property Entity danger_ui = "398df688-96f8-4f75-80f1-2092cc72c8a3"
+
+	property Entity fish_sprite_ui = "634c117e-b3b1-4715-8290-8efc7c84100f"
+
+	property string name = ""
+
+	property string sprite_RUID = ""
+
+	@ExecSpace("Client")
+	method void StartFishing(number _fishPower, number _playerPower, string name, string sprite)
+		self.fishPower = _fishPower
+		self.playerPower = _playerPower
+		self.gauge = 0.0
+		self.distance = 0.5
+		self.isFishing = true
+		self.state = "fishing"
+		self.dangerTime = 0.0 -- 위험구간 누적 시간
+		
+		self.name = name
+		self.sprite_RUID = sprite
+
+		self.isMouseDown = false
+		
+		_EntityService:GetEntityByPath("/ui/MiniGameGroup/UISprite").Enable = true
+		_EntityService:GetEntityByPath("/ui/MiniGameGroup/UISprite").Visible = true
+	end
+
+	method void ResetVariables()
+		self.fishPower = 0
+		self.playerPower = 0
+		self.gauge = 0.0
+		self.distance = 0.5
+		self.isFishing = false
+		self.state = "idle"
+		self.dangerTime = 0.0 -- 위험구간 누적 시간
+		
+		self.isMouseDown = false
+
+		self.name = ""
+		self.sprite_RUID = ""
+	end
+
+	method void OnMouseDown()
+		self.isMouseDown = true
+	end
+
+	method void OnMouseUp()
+		self.isMouseDown = false
+	end
+
+	method void OnUpdate(number dt)
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+
+		if not self.isFishing or self.state ~= "fishing" then return end
+		
+		-- 게이지(텐션) 처리: 파워 비율에 따라 증가/감소
+		local gaugeIncRate = (self.fishPower or 1) / (self.playerPower or 1)
+		if self.isMouseDown then
+			self.gauge = math.min(1.0, (self.gauge or 0) + gaugeIncRate * dt)
+		else
+			self.gauge = math.max(0.0, (self.gauge or 0) - 0.5 * dt)
+		end
+		
+		-- 위험구간(게이지 0.8 이상)에서 머문 시간 누적
+		if self.isMouseDown then
+			if(self.gauge or 0) >= 0.95 then
+				self.dangerTime = (self.dangerTime or 0) + dt * 2
+			elseif (self.gauge or 0) > 0.8 then
+				self.dangerTime = (self.dangerTime or 0) + dt
+			else
+				self.dangerTime = (self.dangerTime or 0) + dt * 0.5
+			end
+			
+		else
+			self.dangerTime = math.max(0.0, (self.dangerTime or 0) - dt)
+		end
+		
+		-- 거리 처리: 버튼 누른 시간에 비례해서 감소
+		if self.isMouseDown then
+			self.distance = math.max(0.0, (self.distance or 1) - dt * 0.6)
+			self.fish_sprite_ui.SpriteGUIRendererComponent.FlipX = false
+		else
+			self.distance = math.min(1.0, (self.distance or 1) + dt * 0.3)
+			self.fish_sprite_ui.SpriteGUIRendererComponent.FlipX = true
+		end
+		
+		
+		self.ui_gauge.UITransformComponent.RectSize = Vector2(self.gauge * self.maxwidth, 54.71224)
+		self.distance_gauge.UITransformComponent.RectSize = Vector2(self.distance * self.maxwidth, 54.71224)
+		self.danger_ui.UITransformComponent.RectSize = Vector2(math.min(1.0, self.dangerTime) * self.maxwidth, 54.71224)
+		
+		
+		-- 성공/실패 판정
+		if (self.dangerTime or 0) > 1.0 then -- 1초 이상 위험구간 유지시 실패
+			self.state = "fail"
+			self.isFishing = false
+			self:OnFishingFail()
+		elseif (self.distance or 1) <= 0.0 then
+			self.state = "success"
+			self.isFishing = false
+			self:OnFishingSuccess()
+		end
+		
+	end
+
+	method void OnFishingSuccess()
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+
+		_EntityService:GetEntityByPath("/ui/MiniGameGroup/UISprite").Enable = false
+		self.Entity.NewInventoryComponent:GetItem(self.name)
+		self.Entity.FishingComponent:SuccessFishing(self.name, self.sprite_RUID)
+		-- 성공 처리
+		self:ResetVariables()
+		print("Success")
+	end
+
+	method void OnFishingFail()
+		if _UserService.LocalPlayer ~= self.Entity then
+			return
+		end
+
+		_EntityService:GetEntityByPath("/ui/MiniGameGroup/UISprite").Enable = false
+		-- 실패 처리
+		self:ResetVariables()
+		self.Entity.FishingComponent:FailFishing()
+		print("Fail")
+	end
+
+	@EventSender("Entity", "6330342d-7c62-4e12-9ea4-025c2a70c0f3")
+	handler HandleUITouchUpEvent(UITouchUpEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: UITouchReceiveComponent
+		-- Space: Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		-- local Entity = event.Entity
+		-- local TouchId = event.TouchId
+		-- local TouchPoint = event.TouchPoint
+		---------------------------------------------------------
+		self.isMouseDown = false
+		
+	end
+
+	@EventSender("Entity", "6330342d-7c62-4e12-9ea4-025c2a70c0f3")
+	handler HandleUITouchDownEvent(UITouchDownEvent event)
+		--------------- Native Event Sender Info ----------------
+		-- Sender: UITouchReceiveComponent
+		-- Space: Client
+		---------------------------------------------------------
+		
+		-- Parameters
+		-- local Entity = event.Entity
+		-- local TouchId = event.TouchId
+		-- local TouchPoint = event.TouchPoint
+		---------------------------------------------------------
+		self.isMouseDown = true
+	end
+
+	@EventSender("Self")
+	handler HandleFishEvent(FishEvent event)
+		-- Parameters
+		local name = event.name
+		local sprite = event.iconRUID
+		local power = event.power
+		local userId = event.userId
+		---------------------------------------------------------
+		
+		self:StartFishing(tonumber(power), 1, name, sprite, userId)
+	end
+
+end

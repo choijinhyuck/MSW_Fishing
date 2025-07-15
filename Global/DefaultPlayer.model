@@ -19,7 +19,8 @@
       "Id": "defaultplayer",
       "Components": [
         "script.FishingComponent",
-        "script.NewInventoryComponent"
+        "script.NewInventoryComponent",
+        "script.MiniGameComponent"
       ],
       "Properties": [],
       "Values": [

@@ -7,4 +7,8 @@ script FishEvent extends EventType
 
 	property string tier = ""
 
+	property string power = ""
+
+	property string userId = ""
+
 end

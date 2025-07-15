@@ -1606,23 +1606,23 @@
           "@components": [
             {
               "@type": "MOD.Core.UITransformComponent",
-              "AlignmentOption": 0,
+              "AlignmentOption": 6,
               "AnchorsMax": {
                 "x": 0.5,
-                "y": 0.5
+                "y": 0.0
               },
               "AnchorsMin": {
                 "x": 0.5,
-                "y": 0.5
+                "y": 0.0
               },
               "MobileOnly": false,
               "OffsetMax": {
                 "x": 60.0,
-                "y": 60.0
+                "y": 137.0
               },
               "OffsetMin": {
                 "x": -60.0,
-                "y": -60.0
+                "y": 17.0
               },
               "Pivot": {
                 "x": 0.5,
@@ -1641,7 +1641,7 @@
               "UIVersion": 2,
               "anchoredPosition": {
                 "x": 0.0,
-                "y": 0.0
+                "y": 77.0
               },
               "Position": {
                 "x": 0.0,
@@ -1698,7 +1698,7 @@
               "FillAmount": 1.0,
               "FillCenter": true,
               "FillClockWise": true,
-              "FillMethod": 1,
+              "FillMethod": 0,
               "FillOrigin": 0,
               "FlipX": false,
               "FlipY": false,
